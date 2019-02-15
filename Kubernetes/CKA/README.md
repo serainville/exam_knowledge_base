@@ -16,10 +16,12 @@ Possible lab environmetns:
 - AWS
 - GCP
 
-Server hardware configuations
-- Storage: 10 GB
-- CPU\Cores: 2
-- RAM: 7.5 GB
+Recommened server hardware configuations
+|component|Amount|
+------------------
+| Storage | 10 GB |
+| CPU \ Cores | 2 |
+| RAM | 7.5 GB |
 
 ## Curriculum
 ### Scheduling (5%)
