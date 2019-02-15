@@ -10,7 +10,7 @@ Possible lab environmetns:
 
 The following is the recommened server hardware configuation for all nodes. You may run Kubernetes on much smaller hardware, such as 1GB of RAM and 1 vCPU, however, performance may become an issue.
 
-Recommended Server Configuration[^1]
+Recommended Server Configuration,[^1]
 
 | Component   | Amount |
 | ----------- | ------ |
