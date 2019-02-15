@@ -17,11 +17,12 @@ Possible lab environmetns:
 - GCP
 
 Recommened server hardware configuations
-| Component | Amount |
-| --------- | ------ |
-| Storage | 10 GB |
-| CPU \ Cores | 2 |
-| RAM | 7.5 GB |
+
+| Component   | Amount |
+| ----------- | ------ |
+| Storage     | 10 GB  |
+| CPU \ Cores | 2      |
+| RAM         | 7.5 GB |
 
 
 ## Curriculum
