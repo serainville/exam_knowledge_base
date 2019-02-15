@@ -18,10 +18,13 @@ Possible lab environmetns:
 
 Recommened server hardware configuations
 |component|Amount|
-------------------
+|---------|------|
 | Storage | 10 GB |
+|---------|------|
 | CPU \ Cores | 2 |
+|---------|------|
 | RAM | 7.5 GB |
+|-----|--------|
 
 ## Curriculum
 ### Scheduling (5%)
