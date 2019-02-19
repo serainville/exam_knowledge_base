@@ -2,8 +2,8 @@
 
 ## Section 1: Setting up a cloud solution environment
 1.1 Setting up cloud projects and accounts. Activities include:
-	- Creating projects
-	- Assigning users to pre-defined IAM roles within a project.
+	1.1.1 Creating projects
+	1.1.2 Assigning users to pre-defined IAM roles within a project.
 
 1.2 Managing billing configuration
 
