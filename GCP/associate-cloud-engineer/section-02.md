@@ -1,0 +1,1 @@
+# Section 2: Planning and configuring a cloud solution
