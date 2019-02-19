@@ -95,5 +95,39 @@
 
 4.4 Managing data solutions. Tasks include:
 - Executing queries to retrieve data from data instances (e.g., Cloud SQL, BigQuery, Cloud Spanner, Cloud Datastore, Cloud Bigtable, Cloud Dataproc)
+- Estimating costs of a BigQuery query
+- Backing up and restoring data instances (e.g., Cloud SQL, Cloud Datastore, Cloud Dataproc)
+- Reviewing job status in Cloud Dataproc or BigQuery
+- Moving objects between Cloud Storage buckets
+- Converting Cloud Storage buckets between storage classes
+- Setting object lifecycle management policies for Cloud Storage buckets
+- Working with management interfaces (e.g., Cloud Console, Cloud Shell, Cloud SDK)
+
+4.5 Managing networking resources. Tasks include:
+- Adding a subnet to an existing VPC
+- Expanding a CIDR block subnet to have more IP addresses
+- Reserving static external or internal IP addresses
+- Working with management interfaces (e.g., Cloud Console, Cloud Shell, Cloud SDK)
+
+4.6 Monitoring and logging. Tasks include:
+- Creating Stackdriver alerts based on resource metrics
+- Creating Stackdriver custom metrics
+- Configuring log sinks to export logs to external systems (e.g., on premises or BigQuery)
+- Viewing and filtering logs in Stackdriver
+- Viewing specific log message details in Stackdriver
+- Using cloud diagnostics to research an application issue (e.g., viewing Cloud Trace data, using Cloud Debug to view an application point-in-time)
+- Viewing Google Cloud Platform status
+- Working with management interfaces (e.g., Cloud Console, Cloud Shell, Cloud SDK)
 
 ## Section 5: Configuring access and security
+5.1 Managing Identity and Access Management (IAM). Tasks include:
+- Viewing account IAM assignments
+- Assigning IAM roles to accounts or Google Groups
+- Defining custom IAM roles
+
+5.2 Managing service accounts. Tasks include:
+- Managing service accounts with limited scopes
+- Assigning a service account to VM instances
+- Granting access to a service account in another project
+
+5.3 Viewing audit logs for project and managed services
