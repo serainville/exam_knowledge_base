@@ -150,9 +150,17 @@ You could generate a new image build with every plugin update, except that will 
 
 ## Persistent Storage for Content
 
+Docker is able to mount directories on the host filesystem into the container at runtime. This feature allows data to persist beyond the lifecycle of a container, which is ephemeral (temporary). With the volumes feature we can install our plugins and themes on the local host’s filesystem, and all updates will be preserved. 
+
+In this section will use the directory structure we created earlier to host our plugins and themes. We will then mount the directory into our container.
+
+To mount volumes we must use the Docker run -v flag. In the example below we providing a list of target mount points within the container. A source directory will automatically be created by Docker under the /var/lib directory when we don’t include the source. 
+
 ``` 
 docker run -d -p 80:80 -v /var/www/html/wp-content/themes,/var/www/html/wp-content/plugins,/var/www/html/wp-content/uploads myblog/wordpress:5.2
 ``` 
+
+Let’s mount our volumes again, but this time we will use the directories we created earlier as our sources. 
 
 ```
 docker run -d -p 80:80 \
@@ -161,6 +169,8 @@ docker run -d -p 80:80 \
 -v uploads/:/var/www/html/wp-content/uploads \
 myblog/wordpress:5.2
 ```
+
+Log into the admin area of WordPress and verify that the plugins and themes we placed in the source directory are available. Now stop the container and run again. 
 
 ```
 docker ps
@@ -182,6 +192,31 @@ docker run -d -p 80:80 \
 -v uploads/:/var/www/html/wp-content/uploads \
 myblog/wordpress:5.2
 ```
+
+Once again verify the plugins and themes are available. We have now successfully preserved changes to our container without having to add anything to our Docker build. 
+We are now free to update our plugins easily without being forced to rebuild our image. We are also free to install plugins and themes from within the admin portal, providing a more natural way of using WordPress. Alternatively, you may still download them to the source directory, where they will be available to the running container. 
+
+Try to install a new plugin from the Admin portal. You will likely be prompted for FTP server information. The reason WordPress behaved in this manner is because the volumes we mounted are owned by the root user. WordPress, running under the context of the www-data user does not have write access. We’ll look at solving this issue in the next section. 
+
+## Running Container With Non-Privileged User
+
+A large number of images available from Dockerhub, including the official WordPress image, run as root. Not surprising, this is not a secure way to run a container. Containers should only ever run with the least level of privileged to function. Going back to our issue writing to mounted volumes in then last section, our volumes are mounted as root and are, therefore, owned by the same account. 
+
+Docker has provided a USER option for the Dockerfiles, which will allows us to run our container as a non-privileged account. The caveat to this is the user account must also exist on the host file system. If it doesn’t already exist, we will have to create it. 
+
+The base WordPress container runs Apache Web Server, and that means WordPress is running as www-data. Let’s modify our Dockerfiles so that our container will also run as www-data. 
+
+Build a new version of your WordPress image and then restart the container. 
+
+Notice that your container has failed to load, as it wasn’t able to bind Apache to port 80. Only privileged users are allowed to bind to port 80, so will will have to instruct our container to allow binding by non-privileged accounts.
+
+Restart your container and verify that it runs successfully. You will now be able to install and update plugins stored on the mounted volume. 
+
+
+## Handling Failures
+
+Let’s face it, nothing is impervious to failure. There’s a good chance your container will fail for one reason or another, bringing your site offline. Obviously, this is undesirable since our uses expect nothing short of 100% uptime. Docker has several restart policies that can be applied to a container at runtime. These policies will attempt to restart a container after it has either stopped or failed. 
+
 
 
 
