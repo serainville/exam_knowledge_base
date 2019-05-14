@@ -9,7 +9,7 @@ In this tutorial you will be progressively guided through each step for running 
 
 # Getting Started
 
-# Running WordPress Containers
+## Running WordPress Containers
 
 WordPress publishes an official Docker image to Dockerhub. It is a bare bones, light weight container running on Alpine Linux. Pull the image down into your local repository.
 
@@ -61,7 +61,7 @@ docker run -d -p 80:80 --env-file wp_vars wordpress
 You have successfully used the base image to run WordPress as a Docker container. Must sites do not run a vanilla install of WordPress, so in the next section we will look into customizing an image for a site.
 
 
-# Customizing the Wordpress Image
+## Customizing the Wordpress Image
 
 Dockerfile is a file used by Docker to template the build of a new Docker image. Most images build on top of existing images to extend their configurations. We will do the same by building a new image for a WordPress blog on top of the official WordPress docker image.
 
@@ -148,7 +148,7 @@ Adding plugins and themes to your build is convienent, but it creates a few prob
 You could generate a new image build with every plugin update, except that will likely become an adminstrative burden. A better solution is to store your plugins and themes in persistent storage, which is mounted every time a new container is started. We cover this topic in the next section.
 
 
-# Persistent Storage for Content
+## Persistent Storage for Content
 
 ``` 
 docker run -d -p 80:80 -v /var/www/html/wp-content/themes,/var/www/html/wp-content/plugins,/var/www/html/wp-content/uploads myblog/wordpress:5.2
@@ -223,13 +223,29 @@ docker-compose stop
 docker-compose build
 ```
 
+## Least Privilege
+A container should only run with the least level of privilege needed. Unfortunately, many images found on Dockerhub, such as the official WordPress images, run under the context of root. We can verify this by using the following command against our docker-compose blog service.
+
 ```
 docker-compose exec blog id
 ```
 
+The output will display the user id, group id, and associated groups that container runs as. In our example below, we can see that the WordPress container is running as root.
+
 ```
 uid=0(root) gid=0(root) groups=0(root)
 ```
+
+Docker provides a USER option for the Dockerfile that allows us to specify the user or uid we want the container to run as. Whichever user is set here must also exist on the host server. You should map the user to that of the service running within the container, and for the WordPress image, which uses Apache Web Server, that means the www-data account. When creating the user on the host system it is important to map it to the same uid used in the image, which is 33. 
+
+Create the www-data user on the host server, if it doesn't already exist.
+
+```
+useradd -r -u 33 -g 33 www-data
+```
+
+Update the Dockerfile to add `USER www-data` to instruct Docker to run the container under the www-data user context.
+
 
 ``` Dockerfile
 FROM wordpress
@@ -241,6 +257,18 @@ ENV WORDPRESS_DB_HOST=192.168.1.2:3307 \
     WORDPRESS_DB_NAME=demo_blog \
     WORDPRESS_TABLE_PREFIX=wp_
 ```
+
+If you attempted to restart your container with the latest changes, you will note that it will fail to launch successfully. The reason for this is that we are now running unprivileged, preventing Apache from binding to a system port (80). We can update our docker-compose.yml file to instruct the container to allow unprivileged port binding.
+
+Add the following to your docker-compose.yml file under the service (blog) entry.
+
+```
+    sysctls:
+      - net.ipv4.ip_unprivileged_port_start=0
+```
+
+Your docker-compose.yml file should now look like the example below.
+
 
 ``` yaml
 ---
@@ -256,7 +284,17 @@ services:
       - "./wp-content/:/var/www/html/wp-content:Z"
 ```
 
+Rebuild your Docker image via docker-compose and then restart it.
 
+```
+docker-compose build && docker-compose up -d
+```
+
+# Safely Handling Secrets
+
+We've address running a Docker container reliably on a production server by utilizing docker-compose. We haven't, however, addressed the elephant in the room, which is securely handling secrets. Unfortunately, with WordPress there isn't an easy solution for handling database credentials securely. Whether we are storing this information in our docker-compose.yml file, storing it within our Dockerfile, or entering it as an env variable when executing docker run, the credentials are easily discoverable.
+
+While docker provides a built-in secrets service for handling sensitive information, it is only available in swarm mode. We have not covered docker orchestration solutions in this tutorial, but to address this area of concern you will want to investigate running the container 
 
 # Container Orchestration
 
