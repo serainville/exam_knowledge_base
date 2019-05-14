@@ -3,32 +3,120 @@ title: Deploying WordPress on Docker
 ---
 
 # Overview
+Running WordPress sites within a Docker container has grown in popularity since the inception of Docker. Doing so has many obvious benefits, especially for those developing themes and plugins. And while containerizing a WordPress site is not a stranouse activity, building and running a container in production requires a number of considerations. 
 
-# Using the Wordpress Docker Image
+In this tutorial you will be progressively guided through each step for running a container in productions, from building the initial image to running it securely and reliabily in production.
+
+# Getting Started
+
+# Running WordPress Containers
+
+WordPress publishes an official Docker image to Dockerhub. It is a bare bones, light weight container running on Alpine Linux. Pull the image down into your local repository.
 
 ```
 docker pull wordpress
 ```
 
+Notice that no release version was specified in our pull command. The default action performed by docker pull when no release tag is specified is to pull down the latest image (or <image-name>:latest>. To pull down a specific version of WordPress add the version tag to the docker pull command.
+    
+```
+docker pull wordpress:5.2
+```
+
+Let's run the base image to show the container in action. We will use the -p flag to expose the container on port 80 and use the -d flag to daemonize the container to run in the background.
+
+```
+docker run -d -p 80:80 wordpress
+```
+
+For a typical WordPress install one of the first actions you take will be to configure your database. The base image accepts a number of environment variables used to configure WordPress. The key variables to know are for configuring the database endpoint. 
+
+- WORDPRESS_DB_HOST
+- WORDPRESS_DB_USER
+- WORDPRESS_DB_PASSWORD
+- WORDPRESS_DB_NAME
+
+Docker provides a flag to set a list of environment variables. The following is an example of running the base WordPress image by setting the database related environment variables.
+
 ```
 docker run -d -p 80:80 -e WORDPRESS_DB_HOST=localhost,WORDPRESS_DB_USER=user1,WORDPRESS_DB_PASSWORD=password,WORDPRESS_DB_NAME=wpsite1 wordpress
 ```
 
+Now, that isn't likely something you are going to want to type over and over. Thankfully, Docker has a feature for setting environment variables via a text file. Create a new file called wp_vars and then add the following contents. Ensure you set the values to match your environment.
+
 ```
-WORDPRESS_DB_HOST=...
+WORDPRESS_DB_HOST=
 WORDPRESS_DB_USER=...
 WORDPRESS_DB_PASSWORD=
 WORDPRESS_DB_NAME=
-WORDPRESS_TABLE_PREF
+WORDPRESS_TABLE_PREF=wp_
 ```
+
+To use the environment variables file when running the WordPress container we use the --env-file flag. Run the base image and point the --env-file to the wp_vars file.
 
 ```
 docker run -d -p 80:80 --env-file wp_vars wordpress
 ```
 
+You have successfully used the base image to run WordPress as a Docker container. Must sites do not run a vanilla install of WordPress, so in the next section we will look into customizing an image for a site.
 
 
 # Customizing the Wordpress Image
+
+Dockerfile is a file used by Docker to template the build of a new Docker image. Most images build on top of existing images to extend their configurations. We will do the same by building a new image for a WordPress blog on top of the official WordPress docker image.
+
+Create workspace on your filesystem to store your WordPress docker project.
+
+```
+mkdir -p ~/workspace/wordpress
+```
+
+Within the workspace, create a new file named Dockerfile and then add the following contents to the Dockerfile.
+
+```
+FROM wordpress
+
+ENV WORDPRESS_DB_HOST=192.168.1.2:3307 \
+    WORDPRESS_DB_USER=demo_blog \
+    WORDPRESS_DB_NAME=demo_blog \
+    WORDPRESS_TABLE_PREFIX=wp_
+```
+
+Our Dockerfile has two steps: FROM and ENV. The FROM step instructs Docker to build a new image based on the wordpress image. The ENV step allows us to set the envirnonment variables for WordPress. Notice how the WORDPRESS_DB_PASSWORD variable is missing from our Dockerfile. Storing sensitive information, also known as secrets, within our configuration files is very insecure. Instead, we will set the variable when the container is started.
+
+Let's build our new custom image. We will tag our image with a name and version to maintain a history of changes. Since this is our first build, we will tag the image with myblog:1.0.0. 
+
+```
+docker build -t myblog:1.0.0 .
+```
+
+After a successful build, our image will be available in our local Docker repository. We can verify this by running the docker images command.
+
+```
+docker images
+```
+
+Let's run our first image. We will set the WordPress database password using the -e flag. Alternatively, we could have used and environment variables file as we did earlier.
+
+```
+docker run -d -p 80:80 -e WORDPRESS_DB_PASSWORD=super-secret-password myblog:1.0.0
+```
+
+## Adding Plugins and Themes
+
+While a vanilla instance of WordPress might satisfy some, most customize WordPress via additional plugins and themes. Both can be installed via the admin portal. However, since running containers are ephemeral all changes are lost when the container is stopped. 
+
+There are two solutions available. The solution will be covered in this section, and that is to add the plugins to the build process. The second option, attaching peristent storage to the container, will be covered in a section below.
+
+Docker provides to commands to add contents to an image build - ADD and COPY. While both can add downloads plugins and themes to the WordPress image, the ADD command will automatically extract archives to the target.
+
+In your workspace create directoreis to store themes and plugins, and then download some themes and plugins into the appropriate directories.
+
+```
+mkdir -p ~/workspace/wordpress/{themes,plugins}
+```
+
+Modify the Dockerfile to add the themes and plugins to the WordPress install within your image. For each item we specify a source, on the local machine, and then a target within the image itself.
 
 ```
 FROM wordpress
@@ -39,14 +127,25 @@ ENV WORDPRESS_DB_HOST=192.168.1.2:3307 \
     WORDPRESS_DB_NAME=demo_blog \
     WORDPRESS_TABLE_PREFIX=wp_
 
-ADD plugins/plugins-a-1.0.0.tar.gz /var/www/html/wp-content/plugins
-ADD plugins/plugin-b-1.1.1.tar.gz /var/www/html/wp-content/plugins
+ADD plugins/plugins-a-1.0.0.tar.gz /var/www/html/wp-content/plugins \
+    plugins/plugin-b-1.1.1.tar.gz /var/www/html/wp-content/plugins
 ```
 
+Save your changes and then run a new build. If desired, increment your image version by one.
+
 ```
-docker build -t myblog/wordpress:5.2 .
+docker build -t myblog:1.0.1 .
 ```
 
+Run your updated Docker image and verify that the themes and plugins you installed are available. 
+
+```
+docker run -d -p 80:80 -e WORDPRESS_DB_PASSWORD=super-secret-password myblog:1.0.1 
+```
+
+Adding plugins and themes to your build is convienent, but it creates a few problems. Plugins, for example, usually have a large volume of releases to address bugs and security issues. You could update the plugin from within the running container, however, since the container is ephemeral they updates will not be perserved when the container is restarted. Since updates can introduce database schema changes, your site will fail to load correctly with the outdated containter.
+
+You could generate a new image build with every plugin update, except that will likely become an adminstrative burden. A better solution is to store your plugins and themes in persistent storage, which is mounted every time a new container is started. We cover this topic in the next section.
 
 
 # Persistent Storage for Content
